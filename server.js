@@ -123,6 +123,23 @@ async function handleApi(req, res, pathname) {
     return sendJSON(res, 200, { results: getResults(), players: getPlayers() });
   }
 
+  // GET /api/export -> downloadable JSON backup of all data
+  if (pathname === '/api/export' && req.method === 'GET') {
+    const backup = {
+      exportedAt: new Date().toISOString(),
+      results: getResults(),
+      players: getPlayers(),
+    };
+    const body = JSON.stringify(backup, null, 2);
+    const dateStamp = new Date().toISOString().slice(0, 10);
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Content-Disposition': `attachment; filename="wordle-tracker-backup-${dateStamp}.json"`,
+      'Content-Length': Buffer.byteLength(body),
+    });
+    return res.end(body);
+  }
+
   // POST /api/players  { name }
   if (pathname === '/api/players' && req.method === 'POST') {
     try {
