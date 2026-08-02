@@ -7,7 +7,7 @@ const path = require('path');
 const url = require('url');
 
 const PORT = process.env.PORT || 3000;
-const DATA_DIR = path.join(__dirname, 'data');
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const RESULTS_FILE = path.join(DATA_DIR, 'results.json');
 const PLAYERS_FILE = path.join(DATA_DIR, 'players.json');
 const PUBLIC_DIR = path.join(__dirname, 'public');
