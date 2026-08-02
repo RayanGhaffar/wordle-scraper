@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wordle Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Expanded:wght@700;800&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="hero">
+    <div class="hero-tiles" aria-hidden="true">
+      <span class="ht c1">W</span><span class="ht c2">O</span><span class="ht c3">R</span><span class="ht c4">D</span><span class="ht c5">L</span><span class="ht c6">E</span>
+    </div>
+    <h1>Group Tracker</h1>
+    <p class="tagline">Every guess, every streak, one leaderboard.</p>
+  </header>
+
+  <section class="card add-card">
+    <h2>Add today's result</h2>
+    <p class="hint">Paste your Wordle share text below — the kind you'd normally drop in the chat.</p>
+    <form id="add-form">
+      <div class="field-row">
+        <div class="field">
+          <label for="player-select">Who's this?</label>
+          <div class="player-input-group">
+            <select id="player-select"></select>
+            <button type="button" id="new-player-btn" class="ghost-btn">+ New name</button>
+          </div>
+          <input type="text" id="new-player-input" placeholder="Type a new name…" style="display:none" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="raw-text">Wordle share text</label>
+        <textarea id="raw-text" rows="4" placeholder="Wordle 1,234 4/6
+
+⬜🟨⬜⬜⬜
+⬜🟩⬜⬜⬜
+🟩🟩🟩⬜⬜
+🟩🟩🟩🟩🟩"></textarea>
+      </div>
+      <button type="submit" class="primary-btn">Add result</button>
+      <p id="form-message" class="form-message"></p>
+    </form>
+  </section>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="today">Today</button>
+    <button class="tab" data-tab="leaderboard">Leaderboard</button>
+    <button class="tab" data-tab="averages">Averages</button>
+    <button class="tab" data-tab="history">History</button>
+  </nav>
+
+  <main>
+    <section id="tab-today" class="tab-panel active">
+      <div id="today-content"></div>
+    </section>
+
+    <section id="tab-leaderboard" class="tab-panel">
+      <div id="leaderboard-content"></div>
+    </section>
+
+    <section id="tab-averages" class="tab-panel">
+      <div id="averages-content"></div>
+    </section>
+
+    <section id="tab-history" class="tab-panel">
+      <div id="history-content"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Data lives in <code>data/results.json</code> on the server — no accounts.</p>
+  </footer>
+
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
