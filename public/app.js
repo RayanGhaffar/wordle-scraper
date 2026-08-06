@@ -19,13 +19,14 @@ function populatePlayerSelect() {
   const select = document.getElementById('player-select');
   const current = select.value;
   select.innerHTML = '';
-  if (state.players.length === 0) {
-    const opt = document.createElement('option');
-    opt.value = '';
-    opt.textContent = 'No names yet — add one →';
-    select.appendChild(opt);
-    return;
-  }
+
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  placeholder.textContent = state.players.length === 0 ? 'No names yet — add one' : 'Select name';
+  select.appendChild(placeholder);
+
   state.players
     .slice()
     .sort((a, b) => a.localeCompare(b))
@@ -35,7 +36,9 @@ function populatePlayerSelect() {
       opt.textContent = name;
       select.appendChild(opt);
     });
-  if (state.players.includes(current)) select.value = current;
+
+  // only keep a real prior selection — never re-select the placeholder itself
+  if (current && state.players.includes(current)) select.value = current;
 }
 
 // ---------- tile-strip rendering ----------
@@ -95,7 +98,8 @@ function computePlayerStats() {
     }
   });
 
-  // winner = fewest attempts, tie-breaker = earlier submission
+  // wins: fewest attempts among solved results for that puzzle;
+  // if two+ players tie on attempts, earliest submittedAt breaks the tie.
   const byPuzzle = {};
   state.results.forEach((r) => {
     if (!r.solved) return;
@@ -143,7 +147,6 @@ function renderToday() {
     .slice()
     .sort((a, b) => new Date(a.submittedAt) - new Date(b.submittedAt));
 
-  //compute winner
   const solvedToday = todays.filter((r) => r.solved);
   let winner = null;
   solvedToday.forEach((r) => {
@@ -348,8 +351,8 @@ form.addEventListener('submit', async (e) => {
     }
     state.results = data.results;
     state.players = data.players;
+    playerSelect.value = ''; // force a fresh explicit choice for the next submission
     populatePlayerSelect();
-    if (state.players.includes(player)) playerSelect.value = player;
     renderActiveTab();
   } catch (err) {
     formMessage.textContent = 'Network error — is the server running?';
