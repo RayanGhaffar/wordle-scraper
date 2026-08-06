@@ -95,7 +95,7 @@ function computePlayerStats() {
     }
   });
 
-  // wins: earliest solved submission per puzzle number
+  // winner = fewest attempts, tie-breaker = earlier submission
   const byPuzzle = {};
   state.results.forEach((r) => {
     if (!r.solved) return;
@@ -103,11 +103,16 @@ function computePlayerStats() {
     byPuzzle[r.puzzleNumber].push(r);
   });
   Object.values(byPuzzle).forEach((entries) => {
-    let earliest = entries[0];
+    let winner = entries[0];
     entries.forEach((e) => {
-      if (new Date(e.submittedAt) < new Date(earliest.submittedAt)) earliest = e;
+      if (
+        e.attempts < winner.attempts ||
+        (e.attempts === winner.attempts && new Date(e.submittedAt) < new Date(winner.submittedAt))
+      ) {
+        winner = e;
+      }
     });
-    if (byPlayer[earliest.player]) byPlayer[earliest.player].wins += 1;
+    if (byPlayer[winner.player]) byPlayer[winner.player].wins += 1;
   });
 
   return Object.values(byPlayer).map((p) => ({
@@ -138,7 +143,18 @@ function renderToday() {
     .slice()
     .sort((a, b) => new Date(a.submittedAt) - new Date(b.submittedAt));
 
-  const winner = todays.find((r) => r.solved);
+  //compute winner
+  const solvedToday = todays.filter((r) => r.solved);
+  let winner = null;
+  solvedToday.forEach((r) => {
+    if (
+      !winner ||
+      r.attempts < winner.attempts ||
+      (r.attempts === winner.attempts && new Date(r.submittedAt) < new Date(winner.submittedAt))
+    ) {
+      winner = r;
+    }
+  });
   let html = `<h3 class="section-heading">Puzzle #${latest.toLocaleString()}</h3>`;
 
   if (todays.length === 0) {
@@ -174,7 +190,12 @@ function renderLeaderboard() {
     el.innerHTML = `<div class="empty-state">No results yet — the leaderboard fills in as people post.</div>`;
     return;
   }
-  stats.sort((a, b) => b.wins - a.wins || (b.avgAttempts === null ? 1 : a.avgAttempts - b.avgAttempts));
+  stats.sort((a, b) => {
+    if (b.wins !== a.wins) return b.wins - a.wins;
+    if (a.avgAttempts === null) return 1;
+    if (b.avgAttempts === null) return -1;
+    return a.avgAttempts - b.avgAttempts;
+  });
 
   let html = `<h3 class="section-heading">Most daily wins</h3>`;
   stats.forEach((p, i) => {
