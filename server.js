@@ -12,6 +12,17 @@ const RESULTS_FILE = path.join(DATA_DIR, 'results.json');
 const PLAYERS_FILE = path.join(DATA_DIR, 'players.json');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
+// empty data directory if files don't exist
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+if (!fs.existsSync(RESULTS_FILE)) {
+  fs.writeFileSync(RESULTS_FILE, '[]');
+}
+if (!fs.existsSync(PLAYERS_FILE)) {
+  fs.writeFileSync(PLAYERS_FILE, '[]');
+}
+
 // ---------- storage helpers ----------
 
 function readJSON(file) {
@@ -193,12 +204,10 @@ async function handleApi(req, res, pathname) {
       };
 
       if (existingIdx >= 0) {
-        // keep original submittedAt (so re-pasting doesn't change win timing)
-        record.submittedAt = results[existingIdx].submittedAt;
-        results[existingIdx] = record;
-      } else {
-        results.push(record);
+        // resubmission: replaces the old entry with the new 
+        results.splice(existingIdx, 1);
       }
+      results.push(record);
       writeJSON(RESULTS_FILE, results);
 
       return sendJSON(res, 200, { results, players: getPlayers(), saved: record });
