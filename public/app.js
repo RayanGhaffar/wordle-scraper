@@ -109,9 +109,12 @@ function computePlayerStats() {
   Object.values(byPuzzle).forEach((entries) => {
     let winner = entries[0];
     entries.forEach((e) => {
+      const eBlack = typeof e.blackSquares === 'number' ? e.blackSquares : Number.MAX_SAFE_INTEGER;
+      const wBlack = typeof winner.blackSquares === 'number' ? winner.blackSquares : Number.MAX_SAFE_INTEGER;
       if (
         e.attempts < winner.attempts ||
-        (e.attempts === winner.attempts && new Date(e.submittedAt) < new Date(winner.submittedAt))
+        (e.attempts === winner.attempts && eBlack < wBlack) ||
+        (e.attempts === winner.attempts && eBlack === wBlack && new Date(e.submittedAt) < new Date(winner.submittedAt))
       ) {
         winner = e;
       }
@@ -150,10 +153,13 @@ function renderToday() {
   const solvedToday = todays.filter((r) => r.solved);
   let winner = null;
   solvedToday.forEach((r) => {
+    const rBlack = typeof r.blackSquares === 'number' ? r.blackSquares : Number.MAX_SAFE_INTEGER;
+    const wBlack = winner && typeof winner.blackSquares === 'number' ? winner.blackSquares : Number.MAX_SAFE_INTEGER;
     if (
       !winner ||
       r.attempts < winner.attempts ||
-      (r.attempts === winner.attempts && new Date(r.submittedAt) < new Date(winner.submittedAt))
+      (r.attempts === winner.attempts && rBlack < wBlack) ||
+      (r.attempts === winner.attempts && rBlack === wBlack && new Date(r.submittedAt) < new Date(winner.submittedAt))
     ) {
       winner = r;
     }

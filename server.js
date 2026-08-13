@@ -59,7 +59,21 @@ function parseWordleText(text) {
   const solved = attemptsRaw !== 'X';
   const attempts = solved ? parseInt(attemptsRaw, 10) : null;
   if (Number.isNaN(puzzleNumber)) return null;
-  return { puzzleNumber, attempts, solved };
+
+  // Count black squares from the share grid
+  // Square emoji codepoints: 🟩 (U+1F7E9), 🟨 (U+1F7E8), ⬛ (U+2B1B), ⬜ (U+2B1C).
+  const squareChars = text.match(/[\u{1F7E9}\u{1F7E8}\u2B1B\u2B1C]/gu) || [];
+  let blackSquares = null;
+  if (squareChars.length > 0) {
+    blackSquares = 0;
+    squareChars.forEach((ch) => {
+      const cp = ch.codePointAt(0);
+      // if not green or yellow 
+      if (cp !== 0x1F7E9 && cp !== 0x1F7E8) blackSquares += 1;
+    });
+  }
+
+  return { puzzleNumber, attempts, solved, blackSquares };
 }
 
 // ---------- request helpers ----------
