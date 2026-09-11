@@ -21,17 +21,17 @@
     <div class="hero-tiles" aria-hidden="true">
       <span class="ht c1">W</span><span class="ht c2">O</span><span class="ht c3">R</span><span class="ht c4">D</span><span class="ht c5">L</span><span class="ht c6">E</span>
     </div>
-    <h1>Group Tracker</h1>
-    <p class="tagline">Every guess, every streak, one leaderboard.</p>
+    <h1>Wordle Tracker</h1>
+    <p class="tagline">Using Wordle light mode = +1 penalty guess</p>
   </header>
 
   <section class="card add-card">
     <h2>Add today's result</h2>
-    <p class="hint">Paste your Wordle share text below — the kind you'd normally drop in the chat.</p>
+    <p class="hint">Paste your Wordle results below .</p>
     <form id="add-form">
       <div class="field-row">
         <div class="field">
-          <label for="player-select">Who's this?</label>
+          <label for="player-select">Player name</label>
           <div class="player-input-group">
             <select id="player-select" required></select>
             <button type="button" id="new-player-btn" class="ghost-btn">+ New name</button>
@@ -40,7 +40,7 @@
         </div>
       </div>
       <div class="field">
-        <label for="raw-text">Wordle share text</label>
+        <label for="raw-text">Wordle clipboard text</label>
         <textarea id="raw-text" rows="4" placeholder="Wordle 1,234 4/6
 
 ⬜🟨⬜⬜⬜

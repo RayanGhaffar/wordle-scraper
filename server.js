@@ -12,7 +12,7 @@ const RESULTS_FILE = path.join(DATA_DIR, 'results.json');
 const PLAYERS_FILE = path.join(DATA_DIR, 'players.json');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
-// empty data directory if files don't exist
+// sync with data from volume
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
@@ -60,20 +60,10 @@ function parseWordleText(text) {
   const attempts = solved ? parseInt(attemptsRaw, 10) : null;
   if (Number.isNaN(puzzleNumber)) return null;
 
-  // Count black squares from the share grid
-  // Square emoji codepoints: 🟩 (U+1F7E9), 🟨 (U+1F7E8), ⬛ (U+2B1B), ⬜ (U+2B1C).
-  const squareChars = text.match(/[\u{1F7E9}\u{1F7E8}\u2B1B\u2B1C]/gu) || [];
-  let blackSquares = null;
-  if (squareChars.length > 0) {
-    blackSquares = 0;
-    squareChars.forEach((ch) => {
-      const cp = ch.codePointAt(0);
-      // if not green or yellow 
-      if (cp !== 0x1F7E9 && cp !== 0x1F7E8) blackSquares += 1;
-    });
-  }
-
-  return { puzzleNumber, attempts, solved, blackSquares };
+  // tie breaker 1 — count the number of blank tiles in the share text (⬛ or ⬜)
+  const blankMatches = text.match(/[\u2b1b\u2b1c]/gu);
+  const blanks = blankMatches ? blankMatches.length : 0;
+  return { puzzleNumber, attempts, solved, blanks };
 }
 
 // ---------- request helpers ----------
@@ -194,7 +184,7 @@ async function handleApi(req, res, pathname) {
       if (!parsed) {
         return sendJSON(res, 400, {
           error:
-            "Couldn't find a Wordle result in that text. Paste the full share text, e.g. \"Wordle 1,234 4/6\".",
+            "Couldn't find a Wordle result in that text. Paste the full clipboard text, e.g. \"Wordle 1,234 5/6\".",
         });
       }
 
@@ -214,11 +204,12 @@ async function handleApi(req, res, pathname) {
         puzzleNumber: parsed.puzzleNumber,
         attempts: parsed.attempts,
         solved: parsed.solved,
+        blanks: parsed.blanks,
         submittedAt: new Date().toISOString(),
       };
 
+      // overwrites existing record
       if (existingIdx >= 0) {
-        // resubmission: replaces the old entry with the new 
         results.splice(existingIdx, 1);
       }
       results.push(record);

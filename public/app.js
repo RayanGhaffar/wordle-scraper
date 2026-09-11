@@ -44,13 +44,16 @@ function populatePlayerSelect() {
 // ---------- tile-strip rendering ----------
 
 function tileStripHTML(attempts) {
-  // attempts: 1-6, or null for a fail
+  // sets number of tiles for attempts
   let squares = '';
   if (attempts === null) {
-    squares += `<div class="tile fail" title="Failed"></div>`;
-    for (let i = 0; i < 5; i++) squares += `<div class="tile empty"></div>`;
+    for (let i = 0; i < 6; i++) {
+      squares += `<div class="tile fail" title="Failed"></div>`;
+    }
     return `<div class="tile-strip">${squares}</div>`;
   }
+  
+  // sets the color of the tiles for attempts
   for (let i = 1; i <= 6; i++) {
     if (i <= attempts) {
       const varName = ATTEMPT_COLOR_VAR[attempts];
@@ -71,6 +74,24 @@ function miniTileHTML(record) {
   return `<span class="mini-tile" style="background:var(${varName})">${record.attempts}</span>`;
 }
 
+// ---------- win comparison ----------
+// Returns true if incoming `candidate` beats `current` winner under these tiebreakers:
+//   1) fewer attempts wins
+//   2) fewer blank tiles wins (more green & yellow)
+//   3) earlier submittedAt timestamp 
+function isBetterSolve(candidate, current) {
+  if (candidate.attempts !== current.attempts) {
+    return candidate.attempts < current.attempts;
+  }
+  const candidateBlanks = candidate.blanks ?? 0;
+  const currentBlanks = current.blanks ?? 0;
+  if (candidateBlanks !== currentBlanks) {
+    return candidateBlanks < currentBlanks;
+  }
+
+  return new Date(candidate.submittedAt) < new Date(current.submittedAt);
+}
+
 // ---------- stats computation ----------
 
 function getLatestPuzzleNumber() {
@@ -79,6 +100,7 @@ function getLatestPuzzleNumber() {
 }
 
 function computePlayerStats() {
+  // gather each player's career stats
   const byPlayer = {};
   state.players.forEach((p) => {
     byPlayer[p] = { player: p, games: 0, solves: 0, fails: 0, totalAttempts: 0, wins: 0 };
@@ -95,36 +117,32 @@ function computePlayerStats() {
       p.totalAttempts += r.attempts;
     } else {
       p.fails += 1;
+      p.totalAttempts += 7;
     }
   });
 
-  // wins: fewest attempts among solved results for that puzzle;
-  // if two+ players tie on attempts, earliest submittedAt breaks the tie.
+
+  // gather all entries for that specific puzzle
   const byPuzzle = {};
   state.results.forEach((r) => {
     if (!r.solved) return;
     if (!byPuzzle[r.puzzleNumber]) byPuzzle[r.puzzleNumber] = [];
     byPuzzle[r.puzzleNumber].push(r);
   });
+
+  // find the winner for each puzzle
   Object.values(byPuzzle).forEach((entries) => {
     let winner = entries[0];
     entries.forEach((e) => {
-      const eBlack = typeof e.blackSquares === 'number' ? e.blackSquares : Number.MAX_SAFE_INTEGER;
-      const wBlack = typeof winner.blackSquares === 'number' ? winner.blackSquares : Number.MAX_SAFE_INTEGER;
-      if (
-        e.attempts < winner.attempts ||
-        (e.attempts === winner.attempts && eBlack < wBlack) ||
-        (e.attempts === winner.attempts && eBlack === wBlack && new Date(e.submittedAt) < new Date(winner.submittedAt))
-      ) {
-        winner = e;
-      }
+      if (isBetterSolve(e, winner)) winner = e;
     });
     if (byPlayer[winner.player]) byPlayer[winner.player].wins += 1;
   });
 
+  // calculate averages
   return Object.values(byPlayer).map((p) => ({
     ...p,
-    avgAttempts: p.solves > 0 ? p.totalAttempts / p.solves : null,
+    avgAttempts: p.solves > 0 ? p.totalAttempts / (p.solves + p.fails): null,
   }));
 }
 
@@ -152,15 +170,8 @@ function renderToday() {
 
   const solvedToday = todays.filter((r) => r.solved);
   let winner = null;
-  solvedToday.forEach((r) => {
-    const rBlack = typeof r.blackSquares === 'number' ? r.blackSquares : Number.MAX_SAFE_INTEGER;
-    const wBlack = winner && typeof winner.blackSquares === 'number' ? winner.blackSquares : Number.MAX_SAFE_INTEGER;
-    if (
-      !winner ||
-      r.attempts < winner.attempts ||
-      (r.attempts === winner.attempts && rBlack < wBlack) ||
-      (r.attempts === winner.attempts && rBlack === wBlack && new Date(r.submittedAt) < new Date(winner.submittedAt))
-    ) {
+  solvedToday.forEach((r) => { // winner defaults to first solver
+    if (!winner || isBetterSolve(r, winner)) {
       winner = r;
     }
   });
@@ -172,7 +183,7 @@ function renderToday() {
     todays.forEach((r, i) => {
       const isWinner = winner && r.player === winner.player && r.solved;
       html += `
-        <div class="row-card">
+        <div class="row-card today-row">
           <div class="row-left">
             <span class="player-name">${escapeHTML(r.player)} ${isWinner ? '<span class="crown">👑</span>' : ''}</span>
           </div>
@@ -304,16 +315,16 @@ newPlayerBtn.addEventListener('click', () => {
   const showing = newPlayerInput.style.display !== 'none';
   if (showing) {
     newPlayerInput.style.display = 'none';
-    newPlayerBtn.textContent = '+ New name';
     newPlayerInput.required = false;
-    playerSelect.required = true;
     playerSelect.style.display = '';
+    playerSelect.required = true;
+    newPlayerBtn.textContent = '+ New name';
   } else {
     newPlayerInput.style.display = '';
-    newPlayerBtn.textContent = 'Use existing';
     newPlayerInput.required = true;
-    playerSelect.required = false;
     playerSelect.style.display = 'none';
+    playerSelect.required = false;
+    newPlayerBtn.textContent = 'Use existing';
     newPlayerInput.focus();
   }
 });
@@ -338,7 +349,7 @@ form.addEventListener('submit', async (e) => {
     return;
   }
 
-  try {
+  try { // send data to server
     const res = await fetch('/api/results', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -350,26 +361,33 @@ form.addEventListener('submit', async (e) => {
       formMessage.classList.add('error');
       return;
     }
+
+    // cleaup after successful write 
     formMessage.textContent = `Added! Puzzle #${data.saved.puzzleNumber.toLocaleString()} — ${data.saved.solved ? data.saved.attempts + '/6' : 'X/6'} for ${player}.`;
     formMessage.classList.add('success');
     document.getElementById('raw-text').value = '';
     newPlayerInput.value = '';
+
+    // reset the form
     if (usingNewPlayer) {
       newPlayerInput.style.display = 'none';
+      newPlayerInput.required = false;
       playerSelect.style.display = '';
+      playerSelect.required = true;
       newPlayerBtn.textContent = '+ New name';
     }
+
+    // refresh app with any new results from storage
     state.results = data.results;
     state.players = data.players;
-    playerSelect.value = ''; // force a fresh explicit choice for the next submission
+    playerSelect.value = '';
     populatePlayerSelect();
     renderActiveTab();
   } catch (err) {
-    formMessage.textContent = 'Network error — is the server running?';
+    formMessage.textContent = 'API error: ' + err.message;
     formMessage.classList.add('error');
   }
 });
 
-// ---------- init ----------
-
+// start 
 loadData();
