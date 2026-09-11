@@ -304,12 +304,16 @@ newPlayerBtn.addEventListener('click', () => {
   const showing = newPlayerInput.style.display !== 'none';
   if (showing) {
     newPlayerInput.style.display = 'none';
-    playerSelect.style.display = '';
     newPlayerBtn.textContent = '+ New name';
+    newPlayerInput.required = false;
+    playerSelect.required = true;
+    playerSelect.style.display = '';
   } else {
     newPlayerInput.style.display = '';
-    playerSelect.style.display = 'none';
     newPlayerBtn.textContent = 'Use existing';
+    newPlayerInput.required = true;
+    playerSelect.required = false;
+    playerSelect.style.display = 'none';
     newPlayerInput.focus();
   }
 });
