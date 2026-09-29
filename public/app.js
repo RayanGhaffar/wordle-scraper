@@ -219,11 +219,12 @@ function renderLeaderboard() {
 
   let html = `<h3 class="section-heading">Most daily wins</h3>`;
   stats.forEach((p, i) => {
+    const isGoat = p.wins === stats[0].wins;
     html += `
       <div class="row-card">
         <div class="row-left">
           <span class="rank-num">${i + 1}</span>
-          <span class="player-name">${escapeHTML(p.player)}</span>
+          <span class="player-name">${escapeHTML(p.player)}${isGoat ? ' 🐐' : ''}</span>
         </div>
         <span class="stat-num">${p.wins} ${p.wins === 1 ? 'win' : 'wins'}</span>
       </div>`;
